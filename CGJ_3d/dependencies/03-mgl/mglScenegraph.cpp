@@ -38,7 +38,7 @@ namespace mgl {
 	}
 
 	void SceneNode::add(mgl::SceneNode* node) {
-		Node.push_back(node);
+		Nodes.push_back(node);
 	}
 
 	void SceneNode::draw() {
@@ -50,7 +50,7 @@ namespace mgl {
 
 			Shader->unbind();
 		}
-		for (SceneNode* node : Node) {
+		for (SceneNode* node : Nodes) {
 			node->draw();
 		}
 	}
@@ -72,14 +72,14 @@ namespace mgl {
 
 			Shader->unbind();
 		}
-		for (SceneNode* node : Node) {
+		for (SceneNode* node : Nodes) {
 			node->move(movement);
 		}
 	}
 
 	SceneNode* SceneNode::lookForObject() {
-		for (SceneNode* node : Node) {
-			if (!(node->Node.empty())) {
+		for (SceneNode* node : Nodes) {
+			if (!(node->Nodes.empty())) {
 				//node->Shader->isUniform();    //Check if correct
 				node->lookForObject();
 			}

@@ -247,8 +247,8 @@ const float THRESHOLD = static_cast<float>(1.0e-3);
 void MyApp::drawScene() {
 
 	//glBindVertexArray(VaoId);
-	for (mgl::SceneNode* node : SceneGraph->RootNode->Node) {
-		if (!(node->Node.empty()))
+	for (mgl::SceneNode* node : SceneGraph->RootNode->Nodes) {
+		if (!(node->Nodes.empty()))
 			node->draw();
 	}
 }
@@ -279,27 +279,20 @@ void MyApp::keyCallback(GLFWwindow* window, int key, int scancode, int action, i
 			//std::cout << "Being pressed" << "\n";
 		}
 		if (true) { //CHECK IF OBJECT IS SELECTED
-			if (key == GLFW_KEY_RIGHT) {
-				for (mgl::SceneNode* node : SceneGraph->RootNode->Node) {
-					node->move(glm::vec3(1.0f, 0.0f, 0.0f));
-					//ViewMatrix_center += glm::vec3(1.0f, 0.0f, 0.0f);
-				}
+			glm::mat4 c = glm::inverse(Camera->getViewMatrix());
+			glm::vec3 cameraRight = glm::vec3(c[0]);
+			glm::vec3 cameraForward = glm::vec3(c[2]);
+
+			cameraForward.y = 0;
+			cameraRight.y = 0;
+
+			glm::vec3 right = cameraRight * (0.2f * (int(key == GLFW_KEY_RIGHT) - int(key == GLFW_KEY_LEFT)));
+			glm::vec3 depth = -cameraForward * (0.2f * (int(key == GLFW_KEY_UP) - int(key == GLFW_KEY_DOWN)));
+
+			for (mgl::SceneNode* node : SceneGraph->RootNode->Nodes) {
+				node->move(depth+right);
 			}
-			else if (key == GLFW_KEY_LEFT) {
-				for (mgl::SceneNode* node : SceneGraph->RootNode->Node) {
-					node->move(glm::vec3(-1.0f, 0.0f, 0.0f));
-				}
-			}
-			else if (key == GLFW_KEY_UP) {
-				for (mgl::SceneNode* node : SceneGraph->RootNode->Node) {
-					node->move(glm::vec3(0.0f, 0.0f, -1.0f));
-				}
-			}
-			else if (key == GLFW_KEY_DOWN) {
-				for (mgl::SceneNode* node : SceneGraph->RootNode->Node) {
-					node->move(glm::vec3(0.0f, 0.0f, 1.0f));
-				}
-			}
+
 		}
 		if (key == GLFW_KEY_LEFT_CONTROL) {
 			moveObject = true;

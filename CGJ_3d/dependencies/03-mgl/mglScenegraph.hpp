@@ -49,7 +49,7 @@ namespace mgl {
 		SceneNode* lookForObject();
 
 		SceneNode* Parent = nullptr;
-		std::vector<mgl::SceneNode*> Node;
+		std::vector<mgl::SceneNode*> Nodes;
 		Texture* Texture = nullptr;
 		Mesh* Mesh = nullptr;
 		ShaderProgram* Shader = nullptr;
