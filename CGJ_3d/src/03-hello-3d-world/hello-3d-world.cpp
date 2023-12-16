@@ -85,24 +85,13 @@ void MyApp::CreateSceneGraph() {
 
 	SceneGraph = new mgl::SceneGraph;
 	mgl::SceneNode* RootNode = new mgl::SceneNode();
+	mgl::SceneNode* TableNode;
+	mgl::SceneNode* BallNode;
 
 	SceneGraph->create(RootNode, Camera, ViewMatrix, ViewMatrix_position, ViewMatrix_rotation);
 
 
-	mgl::SceneNode* SceneNode = new mgl::SceneNode();
-	Mesh = createMeshes("tennisball.obj");
-	Shaders = createShaderProgram("./assets/shaders/wood-vs.glsl", "./assets/shaders/wood-fs.glsl");
-	Shaders->bind();
-	glUniform3fv(ColorId, 1, glm::value_ptr(glm::vec3(0.0f, 1.0f, 0.0f)));
-	glUniformMatrix4fv(ModelMatrixId, 1, GL_FALSE, glm::value_ptr(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 7.0f, 0.0f))));
-	Shaders->unbind();
-	Texture = new mgl::Texture2D;
-	Texture->load("./assets/textures/image.jpg");
-	SceneNode->create(RootNode, Texture, Mesh, Shaders);
-	RootNode->add(SceneNode);
-
-
-	SceneNode = new mgl::SceneNode();
+	TableNode = new mgl::SceneNode();
 	Mesh = createMeshes("stonetable.obj");
 	Shaders = createShaderProgram("./assets/shaders/marble-vs.glsl", "./assets/shaders/marble-fs.glsl");
 	Shaders->bind();
@@ -111,8 +100,23 @@ void MyApp::CreateSceneGraph() {
 	Shaders->unbind();
 	Texture = new mgl::Texture2D;
 	Texture->load("./assets/textures/image.jpg");
-	SceneNode->create(RootNode, Texture, Mesh, Shaders);
-	RootNode->add(SceneNode);
+	TableNode->create(RootNode, Texture, Mesh, Shaders);
+	RootNode->add(TableNode);
+
+
+	Shaders = nullptr;
+	Mesh = nullptr;
+	BallNode = new mgl::SceneNode();
+	Mesh = createMeshes("tennisball.obj");
+	Shaders = createShaderProgram("./assets/shaders/wood-vs.glsl", "./assets/shaders/wood-fs.glsl");
+	Shaders->bind();
+	glUniform3fv(ColorId, 1, glm::value_ptr(glm::vec3(0.0f, 1.0f, 0.0f)));
+	glUniformMatrix4fv(ModelMatrixId, 1, GL_FALSE, glm::value_ptr(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 7.0f, 0.0f))));
+	Shaders->unbind();
+	Texture = new mgl::Texture2D;
+	Texture->load("./assets/textures/image.jpg");
+	BallNode->create(TableNode, Texture, Mesh, Shaders);
+	TableNode->add(BallNode);
 
 
 	/** /
@@ -244,7 +248,8 @@ void MyApp::drawScene() {
 
 	//glBindVertexArray(VaoId);
 	for (mgl::SceneNode* node : SceneGraph->RootNode->Node) {
-		node->draw();
+		if (!(node->Node.empty()))
+			node->draw();
 	}
 }
 
@@ -273,17 +278,31 @@ void MyApp::keyCallback(GLFWwindow* window, int key, int scancode, int action, i
 		if (action == GLFW_REPEAT) {
 			//std::cout << "Being pressed" << "\n";
 		}
-		if (key == GLFW_KEY_RIGHT) {
-
-		}
-		else if (key == GLFW_KEY_LEFT) {
-
+		if (true) { //CHECK IF OBJECT IS SELECTED
+			if (key == GLFW_KEY_RIGHT) {
+				for (mgl::SceneNode* node : SceneGraph->RootNode->Node) {
+					node->move(glm::vec3(1.0f, 0.0f, 0.0f));
+					//ViewMatrix_center += glm::vec3(1.0f, 0.0f, 0.0f);
+				}
+			}
+			else if (key == GLFW_KEY_LEFT) {
+				for (mgl::SceneNode* node : SceneGraph->RootNode->Node) {
+					node->move(glm::vec3(-1.0f, 0.0f, 0.0f));
+				}
+			}
+			else if (key == GLFW_KEY_UP) {
+				for (mgl::SceneNode* node : SceneGraph->RootNode->Node) {
+					node->move(glm::vec3(0.0f, 0.0f, -1.0f));
+				}
+			}
+			else if (key == GLFW_KEY_DOWN) {
+				for (mgl::SceneNode* node : SceneGraph->RootNode->Node) {
+					node->move(glm::vec3(0.0f, 0.0f, 1.0f));
+				}
+			}
 		}
 		if (key == GLFW_KEY_LEFT_CONTROL) {
 			moveObject = true;
-		}
-		if (moveObject && glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
-			getObject();
 		}
 	}
 	if (action == GLFW_RELEASE) {
@@ -298,7 +317,7 @@ void MyApp::getObject() {
 	glGetIntegerv(GL_VIEWPORT, viewport);
 
 	unsigned char pixelColor[3];
-	glReadPixels(lastX, viewport[3] - lastY, 1, 1, GL_RGB, GL_UNSIGNED_BYTE, pixelColor);
+	glReadPixels((GLint)lastX, viewport[3] - (GLint)lastY, 1, 1, GL_RGB, GL_UNSIGNED_BYTE, pixelColor);
 	glm::vec3 pixel(pixelColor[0] / 255.0f, pixelColor[1] / 255.0f, pixelColor[2] / 255.0f);
 
 	if (!(glm::all(glm::equal(pixel, glm::vec3(0.1f, 0.1f, 0.3f), 0.01f)))) {
@@ -307,7 +326,10 @@ void MyApp::getObject() {
 }
 
 void MyApp::cursorCallback(GLFWwindow* win, double xpos, double ypos) {
-	if (glfwGetMouseButton(win, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS && !moveObject) {
+	if (moveObject && glfwGetMouseButton(win, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
+		getObject();
+	}
+	else if (glfwGetMouseButton(win, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
 		float deltaX = float(xpos) - lastX;
 		float deltaY = lastY - float(ypos);
 

@@ -45,6 +45,7 @@ namespace mgl {
 		static SceneNode& getInstance();
 		void create(SceneNode* parent, Texture* texture, Mesh* mesh, ShaderProgram* shader);
 		void add(SceneNode* node);
+		void move(glm::vec3 movement);
 		SceneNode* lookForObject();
 
 		SceneNode* Parent = nullptr;
@@ -52,7 +53,6 @@ namespace mgl {
 		Texture* Texture = nullptr;
 		Mesh* Mesh = nullptr;
 		ShaderProgram* Shader = nullptr;
-
 	};
 
 
