@@ -52,9 +52,11 @@ private:
 	mgl::Camera* createCamera(glm::mat4 viewMatrix);
 	void CreateSceneGraph();
 	void getObject();
+	glm::vec3 getLookAt();
 	//void updateScenegraph(double elapsed) override;
 	void drawScene();
 	void animate();
+	void saveSceneGraph();
 
 	float lastX, lastY;		//Mouse
 
@@ -84,14 +86,14 @@ void MyApp::CreateSceneGraph() {
 	//////////////////////////////////////////////////////
 
 	SceneGraph = new mgl::SceneGraph;
-	mgl::SceneNode* RootNode = new mgl::SceneNode();
+	mgl::SceneNode* RootNode = new mgl::SceneNode("Root");
 	mgl::SceneNode* TableNode;
 	mgl::SceneNode* BallNode;
 
 	SceneGraph->create(RootNode, Camera, ViewMatrix, ViewMatrix_position, ViewMatrix_rotation);
 
 
-	TableNode = new mgl::SceneNode();
+	TableNode = new mgl::SceneNode("Table");
 	Mesh = createMeshes("stonetable.obj");
 	Shaders = createShaderProgram("./assets/shaders/marble-vs.glsl", "./assets/shaders/marble-fs.glsl");
 	Shaders->bind();
@@ -106,7 +108,7 @@ void MyApp::CreateSceneGraph() {
 
 	Shaders = nullptr;
 	Mesh = nullptr;
-	BallNode = new mgl::SceneNode();
+	BallNode = new mgl::SceneNode("Ball");
 	Mesh = createMeshes("tennisball.obj");
 	Shaders = createShaderProgram("./assets/shaders/wood-vs.glsl", "./assets/shaders/wood-fs.glsl");
 	Shaders->bind();
@@ -271,6 +273,7 @@ void MyApp::windowSizeCallback(GLFWwindow* win, int winx, int winy) {
 void MyApp::displayCallback(GLFWwindow* win, double elapsed) { drawScene(); }
 
 bool moveObject = false;
+mgl::SceneNode* selectedObject = nullptr;
 void MyApp::keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
 	MyApp* myApp = static_cast<MyApp*>(glfwGetWindowUserPointer(window));
 
@@ -278,7 +281,7 @@ void MyApp::keyCallback(GLFWwindow* window, int key, int scancode, int action, i
 		if (action == GLFW_REPEAT) {
 			//std::cout << "Being pressed" << "\n";
 		}
-		if (true) { //CHECK IF OBJECT IS SELECTED
+		if (selectedObject != nullptr) { //CHECK IF OBJECT IS SELECTED
 			glm::mat4 c = glm::inverse(Camera->getViewMatrix());
 			glm::vec3 cameraRight = glm::vec3(c[0]);
 			glm::vec3 cameraForward = glm::vec3(c[2]);
@@ -289,13 +292,17 @@ void MyApp::keyCallback(GLFWwindow* window, int key, int scancode, int action, i
 			glm::vec3 right = cameraRight * (0.2f * (int(key == GLFW_KEY_RIGHT) - int(key == GLFW_KEY_LEFT)));
 			glm::vec3 depth = -cameraForward * (0.2f * (int(key == GLFW_KEY_UP) - int(key == GLFW_KEY_DOWN)));
 
-			for (mgl::SceneNode* node : SceneGraph->RootNode->Nodes) {
-				node->move(depth+right);
+			selectedObject->move(depth + right);
+			for (mgl::SceneNode* node : selectedObject->Nodes) {
+				node->move(depth + right);
 			}
 
 		}
 		if (key == GLFW_KEY_LEFT_CONTROL) {
 			moveObject = true;
+		}
+		if (key == GLFW_KEY_S) {
+			saveSceneGraph();
 		}
 	}
 	if (action == GLFW_RELEASE) {
@@ -309,6 +316,9 @@ void MyApp::getObject() {
 	GLint viewport[4];
 	glGetIntegerv(GL_VIEWPORT, viewport);
 
+	//NEED CORRECT OBJECT
+	selectedObject = SceneGraph->RootNode;
+
 	unsigned char pixelColor[3];
 	glReadPixels((GLint)lastX, viewport[3] - (GLint)lastY, 1, 1, GL_RGB, GL_UNSIGNED_BYTE, pixelColor);
 	glm::vec3 pixel(pixelColor[0] / 255.0f, pixelColor[1] / 255.0f, pixelColor[2] / 255.0f);
@@ -316,6 +326,15 @@ void MyApp::getObject() {
 	if (!(glm::all(glm::equal(pixel, glm::vec3(0.1f, 0.1f, 0.3f), 0.01f)))) {
 		std::cout << glm::to_string(pixel) << "\n";
 	}
+}
+
+glm::vec3 MyApp::getLookAt() {
+	mgl::SceneNode* ball = SceneGraph->RootNode->getNode("Ball");
+
+	GLfloat modelMatrix[16];
+	glGetUniformfv(ball->Shader->ProgramId, 0, modelMatrix);
+
+	return glm::vec3(glm::make_mat4(modelMatrix)[3]);
 }
 
 void MyApp::cursorCallback(GLFWwindow* win, double xpos, double ypos) {
@@ -332,6 +351,7 @@ void MyApp::cursorCallback(GLFWwindow* win, double xpos, double ypos) {
 		glm::quat rotY = glm::angleAxis(glm::radians(deltaY), -glm::vec3(c[0]));
 
 		ViewMatrix_rotation = glm::normalize(ViewMatrix_rotation * rotY * rotX);
+
 
 		ViewMatrix = glm::lookAt(ViewMatrix_position, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
@@ -350,11 +370,20 @@ void MyApp::scrollCallback(GLFWwindow* window, double xoffset, double yoffset)
 
 	if (dist > 10.0f && offset < 1 || offset > 1 && dist < 50.0f || (dist > 10.0f && dist < 50.0f)) {
 		ViewMatrix_position += (ViewMatrix_position)*offset * 0.05f;
+
 		ViewMatrix = glm::lookAt(ViewMatrix_position, glm::vec3(0.0f, 0.0f, 0.0f),
 			glm::vec3(0.0f, 1.0f, 0.0f));
 		Camera->setViewMatrix(glm::translate(ViewMatrix * glm::mat4(ViewMatrix_rotation), -ViewMatrix_center));
 	}
 }
+
+void MyApp::saveSceneGraph() {
+	//SAVE MATRIXES
+	// 
+	// 
+	//SAVETEXTURES
+}
+
 
 /////////////////////////////////////////////////////////////////////////// MAIN
 

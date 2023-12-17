@@ -104,6 +104,11 @@ void Texture2D::load(const std::string &filename) {
   stbi_image_free(image);
 }
 
+/** /
+void Texture2D::PerlinNoise(int 256, 5, 5, 2, 2, 8) {
+    PerlinNoise(256, 5, 5, 2, 2, 8);
+}
+/**/
 ////////////////////////////////////////////////////////////////////////////////
 } // namespace mgl
 

@@ -22,15 +22,16 @@
 namespace mgl {
 
 	////////////////////////////////////////////////////////////////// SceneNode    
-	SceneNode::SceneNode() {}
+	SceneNode::SceneNode(){}
+	SceneNode::SceneNode(std::string name) { NodeName = name; }
 	SceneNode::~SceneNode() {}
 
-	SceneNode& SceneNode::getInstance(void) {
-		static SceneNode instance;
-		return instance;
+	SceneNode* SceneNode::getInstance(void) {;
+		return this;
 	}
 
 	void SceneNode::create(mgl::SceneNode* parent, mgl::Texture* texture, mgl::Mesh* mesh, mgl::ShaderProgram* shader) {
+		
 		Parent = parent;
 		Texture = texture;
 		Mesh = mesh;
@@ -75,6 +76,19 @@ namespace mgl {
 		for (SceneNode* node : Nodes) {
 			node->move(movement);
 		}
+	}
+
+	SceneNode* SceneNode::getNode(std::string name) {
+		if (NodeName==name){
+			return getInstance();
+		}
+		for (SceneNode* node : Nodes) {
+			SceneNode* foundNode = node->getNode(name);
+			if (foundNode != nullptr) {
+				return foundNode;
+			}
+		}
+		return nullptr;
 	}
 
 	SceneNode* SceneNode::lookForObject() {

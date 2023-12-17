@@ -16,6 +16,7 @@
 #include <iostream>
 #include <vector>
 
+
 namespace mgl {
 
 	class IDrawable;
@@ -40,14 +41,17 @@ namespace mgl {
 
 	public:
 		SceneNode();
+		SceneNode(std::string NodeName);
 		~SceneNode();
 		void draw();
-		static SceneNode& getInstance();
-		void create(SceneNode* parent, Texture* texture, Mesh* mesh, ShaderProgram* shader);
+		SceneNode* getInstance();
+		void create( SceneNode* parent, Texture* texture, Mesh* mesh, ShaderProgram* shader);
 		void add(SceneNode* node);
 		void move(glm::vec3 movement);
+		SceneNode* getNode(std::string name);
 		SceneNode* lookForObject();
 
+		std::string NodeName;
 		SceneNode* Parent = nullptr;
 		std::vector<mgl::SceneNode*> Nodes;
 		Texture* Texture = nullptr;
