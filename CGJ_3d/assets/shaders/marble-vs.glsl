@@ -1,6 +1,3 @@
-// STEP 7 - Vertex color defined by model space normal.
-// Copyright (c) 2015-23 by Carlos Martinho
-
 #version 330 core
 
 uniform mat4 ModelMatrix;

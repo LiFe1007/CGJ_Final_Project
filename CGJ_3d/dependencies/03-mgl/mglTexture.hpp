@@ -17,48 +17,52 @@
 
 namespace mgl {
 
-class Texture;
-class Texture2D;
-struct TextureInfo;
+	class Texture;
+	class Texture2D;
+	struct TextureInfo;
 
-//////////////////////////////////////////////////////////////////////// TEXTURE
+	//////////////////////////////////////////////////////////////////////// TEXTURE
 
-class Texture {
-protected:
-  GLuint id;
+	class Texture {
+	protected:
 
-public:
-  Texture();
-  ~Texture();
-  virtual void bind() = 0;
-  virtual void unbind() = 0;
-};
 
-//////////////////////////////////////////////////////////////////// TextureInfo
+	public:
+		GLuint id;
+		int texWidth;
+		int texHeight;
 
-struct TextureInfo {
-  GLenum unit;                // GL_TEXTUREi
-  GLuint index;               // sampler index in shader
-  std::string uniform;        // uniform name in shader
-  Texture *texture = nullptr; // Texture (engine object)
-  Sampler *sampler = nullptr; // Sampler (engine object)
+		Texture();
+		~Texture();
+		virtual void bind() = 0;
+		virtual void unbind() = 0;
+	};
 
-  TextureInfo(GLenum textureunit, GLuint index, const std::string &uniform,
-              Texture *texture, Sampler *sampler);
-  void updateShader(ShaderProgram *shader);
-};
+	//////////////////////////////////////////////////////////////////// TextureInfo
 
-/////////////////////////////////////////////////////////////////////// TEXTURES
+	struct TextureInfo {
+		GLenum unit;                // GL_TEXTUREi
+		GLuint index;               // sampler index in shader
+		std::string uniform;        // uniform name in shader
+		Texture* texture = nullptr; // Texture (engine object)
+		Sampler* sampler = nullptr; // Sampler (engine object)
 
-class Texture2D : public Texture {
-public:
-  void bind() override;
-  void unbind() override;
-  void load(const std::string &filename);
-  //void PerlinNoise(int 256, int 5, int 5, int 2, int 2, int 8);
-};
+		TextureInfo(GLenum textureunit, GLuint index, const std::string& uniform,
+			Texture* texture, Sampler* sampler);
+		void updateShader(ShaderProgram* shader);
+	};
 
-////////////////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////// TEXTURES
+
+	class Texture2D : public Texture {
+	public:
+		void bind() override;
+		void unbind() override;
+		void load(const std::string& filename);
+		//void PerlinNoise(int 256, int 5, int 5, int 2, int 2, int 8);
+	};
+
+	////////////////////////////////////////////////////////////////////////////////
 } // namespace mgl
 
 #endif /* MGL_TEXTURE_HPP */

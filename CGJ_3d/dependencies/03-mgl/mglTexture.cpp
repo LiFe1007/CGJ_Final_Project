@@ -46,6 +46,8 @@ void Texture2D::load(const std::string &filename) {
   unsigned char *image_rgb = stbi_load(filename.c_str(), &width, &height, &channels, 0);
   assert(channels == 3);
   unsigned char* image = new unsigned char[width * height * 4];
+  texWidth = width;
+  texHeight = height;
   // Copy RGB values and set alpha to 1
   for (int i = 0; i < width * height * 3; i++) {
       image[i] = image_rgb[i];

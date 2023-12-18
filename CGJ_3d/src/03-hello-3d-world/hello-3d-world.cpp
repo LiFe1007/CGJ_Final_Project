@@ -41,13 +41,9 @@ private:
 	GLuint VaoId;
 
 	mgl::SceneGraph* SceneGraph = nullptr;
-	mgl::ShaderProgram* Shaders = nullptr;
 	mgl::Camera* Camera = nullptr;
-	GLint ModelMatrixId, ColorId;
-	mgl::Mesh* Mesh = nullptr;
 	mgl::Texture2D* Texture = nullptr;
 
-	mgl::Mesh* createMeshes(std::string mesh_obj);
 	mgl::ShaderProgram* createShaderProgram(std::string vs, std::string fs);
 	mgl::Camera* createCamera(glm::mat4 viewMatrix);
 	void CreateSceneGraph();
@@ -56,9 +52,8 @@ private:
 	//void updateScenegraph(double elapsed) override;
 	void drawScene();
 	void animate();
-	void saveSceneGraph();
 
-	float lastX, lastY;		//Mouse
+	float lastX = 0.0f, lastY = 0.0f;	//Mouse
 
 	glm::mat4 ViewMatrix;			//Camera
 	glm::vec3 ViewMatrix_position;	//Position
@@ -94,42 +89,22 @@ void MyApp::CreateSceneGraph() {
 
 
 	TableNode = new mgl::SceneNode("Table");
-	Mesh = createMeshes("stonetable.obj");
-	Shaders = createShaderProgram("./assets/shaders/marble-vs.glsl", "./assets/shaders/marble-fs.glsl");
-	Shaders->bind();
-	glUniformMatrix4fv(ModelMatrixId, 1, GL_FALSE, glm::value_ptr(glm::mat4(1.0f)));
-	glUniform3fv(ColorId, 1, glm::value_ptr(glm::vec3(0.7f, 0.7f, 0.7f)));
-	Shaders->unbind();
+
 	Texture = new mgl::Texture2D;
 	Texture->load("./assets/textures/image.jpg");
-	TableNode->create(RootNode, Texture, Mesh, Shaders);
+	TableNode->create(RootNode, Texture, "stonetable.obj", "./assets/shaders/marble-vs.glsl", "./assets/shaders/marble-fs.glsl");
+	TableNode->changeShaderColor(glm::vec3(0.7f, 0.7f, 0.7f));
 	RootNode->add(TableNode);
 
 
-	Shaders = nullptr;
-	Mesh = nullptr;
 	BallNode = new mgl::SceneNode("Ball");
-	Mesh = createMeshes("tennisball.obj");
-	Shaders = createShaderProgram("./assets/shaders/wood-vs.glsl", "./assets/shaders/wood-fs.glsl");
-	Shaders->bind();
-	glUniform3fv(ColorId, 1, glm::value_ptr(glm::vec3(0.0f, 1.0f, 0.0f)));
-	glUniformMatrix4fv(ModelMatrixId, 1, GL_FALSE, glm::value_ptr(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 7.0f, 0.0f))));
-	Shaders->unbind();
 	Texture = new mgl::Texture2D;
 	Texture->load("./assets/textures/image.jpg");
-	BallNode->create(TableNode, Texture, Mesh, Shaders);
+	BallNode->create(TableNode, Texture, "tennisball.obj", "./assets/shaders/wood-vs.glsl", "./assets/shaders/wood-fs.glsl");
+	BallNode->move(glm::vec3(0.0f, 7.0f, 0.0f));
+	BallNode->changeShaderColor(glm::vec3(0.0f, 1.0f, 0.0f));
 	TableNode->add(BallNode);
 
-
-	/** /
-	mgl::scenenode = scene->createnode()
-	setmesh
-	setmatrix
-	setshaderprogram
-	settexture
-	/**/
-
-	//mgl::SceneNode* obj = Scene->createNode();
 }
 
 
@@ -180,61 +155,15 @@ void MyApp::updateScenegraph(double elapsed) {
 */
 
 
-///////////////////////////////////////////////////////////////////////// MESHES
-
-mgl::Mesh* MyApp::createMeshes(std::string mesh_obj) {
-	std::string mesh_dir = "./assets/models/";
-
-	std::string mesh_obj_fullname = mesh_dir + mesh_obj;
-
-	mgl::Mesh* m = nullptr;
-	m = new mgl::Mesh();
-	m->generateNormals();
-
-	m->joinIdenticalVertices();
-	m->create(mesh_obj_fullname);
-	return m;
-	//mgl::MeshManager::getinstance.add("ball_mesh", Mesh);
-}
-
-
-///////////////////////////////////////////////////////////////////////// SHADER
-
-mgl::ShaderProgram* MyApp::createShaderProgram(std::string vs, std::string fs) {
-	mgl::ShaderProgram* s = new mgl::ShaderProgram();
-	s->addShader(GL_VERTEX_SHADER, vs);
-	s->addShader(GL_FRAGMENT_SHADER, fs);
-
-	s->addAttribute(mgl::POSITION_ATTRIBUTE, mgl::Mesh::POSITION);
-
-	if (Mesh->hasNormals()) {
-		s->addAttribute(mgl::NORMAL_ATTRIBUTE, mgl::Mesh::NORMAL);
-	}
-	if (Mesh->hasTexcoords()) {
-		s->addAttribute(mgl::TEXCOORD_ATTRIBUTE, mgl::Mesh::TEXCOORD);
-	}
-	if (Mesh->hasTangentsAndBitangents()) {
-		s->addAttribute(mgl::TANGENT_ATTRIBUTE, mgl::Mesh::TANGENT);
-	}
-
-	s->addUniform(mgl::MODEL_MATRIX);
-	s->addUniform(mgl::COLOR_ATTRIBUTE);
-	s->addUniformBlock(mgl::CAMERA_BLOCK, UBO_BP);
-	s->create();
-
-	ModelMatrixId = s->Uniforms[mgl::MODEL_MATRIX].index;
-	ColorId = s->Uniforms[mgl::COLOR_ATTRIBUTE].index;
-	return s;
-}
 
 ///////////////////////////////////////////////////////////////////////// CAMERA
 
-// Perspective Fovy(30) Aspect(640/480) NearZ(1) FarZ(50)
-float fov = 30.0;
-glm::mat4 ProjectionMatrix =
-glm::perspective(glm::radians(fov), 640.0f / 480.0f, 1.0f, 100.0f);
-
 mgl::Camera* MyApp::createCamera(glm::mat4 ViewMatrix) {
+	// Perspective Fovy(30) Aspect(640/480) NearZ(1) FarZ(50)
+	float fov = 30.0;
+	glm::mat4 ProjectionMatrix =
+		glm::perspective(glm::radians(fov), 640.0f / 480.0f, 1.0f, 100.0f);
+
 	mgl::Camera* c = nullptr;
 	c = new mgl::Camera(UBO_BP);
 	c->setViewMatrix(glm::translate(ViewMatrix * glm::mat4(ViewMatrix_rotation), -ViewMatrix_center));
@@ -247,7 +176,6 @@ const float THRESHOLD = static_cast<float>(1.0e-3);
 
 
 void MyApp::drawScene() {
-
 	//glBindVertexArray(VaoId);
 	for (mgl::SceneNode* node : SceneGraph->RootNode->Nodes) {
 		if (!(node->Nodes.empty()))
@@ -298,11 +226,30 @@ void MyApp::keyCallback(GLFWwindow* window, int key, int scancode, int action, i
 			}
 
 		}
+	}
+	if (action == GLFW_PRESS) {
 		if (key == GLFW_KEY_LEFT_CONTROL) {
 			moveObject = true;
 		}
 		if (key == GLFW_KEY_S) {
-			saveSceneGraph();
+			SceneGraph->ViewMatrix = ViewMatrix;
+			SceneGraph->ViewMatrix_position = ViewMatrix_position;
+			SceneGraph->ViewMatrix_rotation = ViewMatrix_rotation;
+			SceneGraph->save("./assets/saves/save.txt");
+
+			std::cout << glm::to_string(ViewMatrix_rotation) << "\n";
+		}
+		if (key == GLFW_KEY_L) {
+			SceneGraph->load("./assets/saves/save.txt");
+			std::cout << glm::to_string(ViewMatrix_rotation) << "\n";
+			ViewMatrix_position = SceneGraph->ViewMatrix_position;
+			ViewMatrix_rotation = SceneGraph->ViewMatrix_rotation;
+
+			ViewMatrix = glm::lookAt(ViewMatrix_position, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+			std::cout << glm::to_string(ViewMatrix_rotation) << "\n";
+
+			Camera->setViewMatrix(glm::translate(ViewMatrix * glm::mat4(ViewMatrix_rotation), -ViewMatrix_center));
 		}
 	}
 	if (action == GLFW_RELEASE) {
@@ -375,13 +322,6 @@ void MyApp::scrollCallback(GLFWwindow* window, double xoffset, double yoffset)
 			glm::vec3(0.0f, 1.0f, 0.0f));
 		Camera->setViewMatrix(glm::translate(ViewMatrix * glm::mat4(ViewMatrix_rotation), -ViewMatrix_center));
 	}
-}
-
-void MyApp::saveSceneGraph() {
-	//SAVE MATRIXES
-	// 
-	// 
-	//SAVETEXTURES
 }
 
 
