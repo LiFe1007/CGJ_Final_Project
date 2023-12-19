@@ -2,6 +2,7 @@
 
 in vec3 exNormal;
 in vec3 exColor;
+in float exAlpha;
 in vec3 FragPos;
 in vec3 exViewPos;
 out vec4 FragmentColor;
@@ -33,7 +34,7 @@ void main(void)
 	vec3 specular = specularStrength * spec * lightColor;  
 
 	vec3 result = (ambient + diffuse + specular) * color;
-	FragmentColor = vec4(result, 1.0);
+	FragmentColor = vec4(result, exAlpha);
 }
 
 vec3 Color(vec3 C, vec3 N)

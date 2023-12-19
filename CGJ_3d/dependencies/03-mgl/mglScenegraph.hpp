@@ -52,7 +52,8 @@ namespace mgl {
 		void saveTexture(const std::string& filename);
 		mgl::Mesh* createMeshes(std::string mesh_obj);
 		mgl::ShaderProgram* createShaderProgram(std::string vs, std::string fs);
-		void changeShaderColor(glm::vec3 color);
+		void changeShaderColor(glm::vec4 color);
+		SceneNode* getSceneAlpha(float alpha);
 
 		std::string NodeName;
 		SceneNode* Parent = nullptr;

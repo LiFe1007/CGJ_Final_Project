@@ -72,11 +72,32 @@ namespace mgl {
 			// Retrieve uniform value
 			glGetUniformfv(Shader->ProgramId, 0, modelMatrix);
 
-			glm::mat4 new_position = glm::make_mat4(modelMatrix) * glm::translate(glm::mat4(1.0f), movement);
+			glm::mat4 new_position;
 
-			Shader->bind();
-			glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(new_position));
-			Shader->unbind();
+			if (NodeName == "Ball") {
+				GLfloat parentModelMatrix[16];
+				glGetUniformfv(Parent->Shader->ProgramId, 0, parentModelMatrix);
+
+				glm::vec3 ball_position = glm::make_mat4(modelMatrix)[3];
+				glm::vec3 parent_position = glm::make_mat4(parentModelMatrix)[3];
+
+				float dist = glm::length(ball_position - parent_position);
+
+				if (dist < 8.0f || glm::dot(parent_position - ball_position, movement) > 0) {
+
+					new_position = glm::make_mat4(modelMatrix) * glm::translate(glm::mat4(1.0f), movement);
+					Shader->bind();
+					glUniformMatrix4fv(ModelMatrixId, 1, GL_FALSE, glm::value_ptr(new_position));
+					Shader->unbind();
+				}
+			}
+			else {
+				new_position = glm::make_mat4(modelMatrix) * glm::translate(glm::mat4(1.0f), movement);
+
+				Shader->bind();
+				glUniformMatrix4fv(ModelMatrixId, 1, GL_FALSE, glm::value_ptr(new_position));
+				Shader->unbind();
+			}
 		}
 		for (SceneNode* node : Nodes) {
 			node->move(movement);
@@ -96,20 +117,6 @@ namespace mgl {
 		return nullptr;
 	}
 
-	void SceneNode::saveTexture(const std::string& filename) {
-
-		// Read texture data
-		std::vector<unsigned char> buffer(Texture2D->texWidth * Texture2D->texHeight * 4);
-		glBindTexture(GL_TEXTURE_2D, Texture2D->id);
-		glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, buffer.data());
-
-		// Save file
-		FILE* file;
-		if (fopen_s(&file, filename.c_str(), "wb") == 0) {
-			fwrite(buffer.data(), 1, buffer.size(), file);
-			fclose(file);
-		}
-	}
 
 	///////////////////////////////////////////////////////////////////////// MESHES
 
@@ -164,12 +171,36 @@ namespace mgl {
 		return s;
 	}
 
-	void SceneNode::changeShaderColor(glm::vec3 color) {
+	void SceneNode::changeShaderColor(glm::vec4 color) {
 		Shader->bind();
-		glUniform3fv(ColorId, 1, glm::value_ptr(color));
+		glUniform4fv(ColorId, 1, glm::value_ptr(color));
 		Shader->unbind();
 	}
 
+	SceneNode* SceneNode::getSceneAlpha(float alpha) {
+		float savedAlpha = 0.0f;
+		if (Shader != nullptr) {
+
+			// Variable to store retrieved matrix
+			GLfloat color[4];
+
+			// Retrieve uniform value
+			glGetUniformfv(Shader->ProgramId, ColorId, color);
+
+			savedAlpha = glm::make_vec4(color)[3];
+			//std::cout << NodeName <<"::" << savedAlpha << "\n";
+		}
+		if (savedAlpha == alpha) {
+			return getInstance();
+		}
+		for (SceneNode* node : Nodes) {
+			SceneNode* foundNode = node->getSceneAlpha(alpha);
+			if (foundNode != nullptr) {
+				return foundNode;
+			}
+		}
+		return nullptr;
+	}
 
 
 	//////////////////////////////////////////////////////////////////// GraphNode
@@ -212,12 +243,6 @@ namespace mgl {
 			outfile << node->NodeName << std::endl;
 		}
 
-		if (node->Texture2D != nullptr) {
-			//node->saveTexture("./assets/saves/" + node->NodeName + "Tex.png");
-			outfile << "__TEXTURE__" << std::endl;
-			outfile << "./assets/saves/" + node->NodeName + "Tex.png" << std::endl;
-		}
-
 		if (node->Mesh != nullptr) {
 			outfile << "__MESH__" << std::endl;
 			outfile << node->MeshLocation << std::endl;
@@ -228,8 +253,11 @@ namespace mgl {
 			outfile << node->ShaderVS << std::endl;
 			outfile << node->ShaderFS << std::endl;
 			GLfloat modelMatrix[16];
-			glGetUniformfv(node->Shader->ProgramId, 0, modelMatrix);
+			glGetUniformfv(node->Shader->ProgramId, 0, modelMatrix);	//Position
 			outfile << glm::to_string(glm::make_mat4(modelMatrix)) << std::endl;
+			GLfloat color[4];
+			glGetUniformfv(node->Shader->ProgramId, 1, color);	//Color
+			outfile << glm::to_string(glm::make_vec4(color)) << std::endl;
 		}
 
 		if (node->NodeName != "Root") {
@@ -256,7 +284,7 @@ namespace mgl {
 		ViewMatrix_position = glm::make_vec3(stringToGlm(line).data());
 		getline(infile, line);		//quat
 		std::vector<float> r = stringToGlm(line);
-		std::rotate(r.begin(),r.begin() + 1,r.end());
+		std::rotate(r.begin(), r.begin() + 1, r.end());
 		ViewMatrix_rotation = glm::make_quat(r.data());
 
 
@@ -277,6 +305,7 @@ namespace mgl {
 		std::string shadervs;
 		std::string shaderfs;
 		glm::vec3 objPosition;
+		glm::vec4 objColor;
 
 
 		getline(infile, line);
@@ -288,13 +317,6 @@ namespace mgl {
 		getline(infile, name);
 		getline(infile, line);
 
-		if (line == "__TEXTURE__") {
-			getline(infile, line);
-			newTexture = nullptr;
-			//Texture2D* newTexture = new mgl::Texture2D;
-			//newTexture->load(line);
-			getline(infile, line);
-		}
 		if (line == "__MESH__") {
 			getline(infile, line);
 			meshLocation = line;
@@ -308,6 +330,8 @@ namespace mgl {
 			getline(infile, line);
 			objPosition = glm::make_mat4(stringToGlm(line).data())[3];
 			getline(infile, line);
+			objColor = glm::make_vec4(stringToGlm(line).data());
+			getline(infile, line);
 		}
 
 
@@ -315,7 +339,7 @@ namespace mgl {
 		if (!meshLocation.empty() && !shadervs.empty() && !shaderfs.empty()) {
 			node->create(parent, newTexture, meshLocation, shadervs, shaderfs);
 			node->move(objPosition);
-			node->changeShaderColor(glm::vec3(0.7f, 0.7f, 0.7f));
+			node->changeShaderColor(objColor);
 		}
 
 		while (numberNodes != 0) {

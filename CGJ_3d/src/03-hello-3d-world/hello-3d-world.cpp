@@ -33,6 +33,7 @@ public:
 	void windowCloseCallback(GLFWwindow* win) override;
 	void windowSizeCallback(GLFWwindow* win, int width, int height) override;
 	void cursorCallback(GLFWwindow* win, double xpos, double ypos) override;
+	void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods) override;
 	void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 	void scrollCallback(GLFWwindow* win, double xoffset, double yoffset);
 
@@ -44,22 +45,22 @@ private:
 	mgl::Camera* Camera = nullptr;
 	mgl::Texture2D* Texture = nullptr;
 
-	mgl::ShaderProgram* createShaderProgram(std::string vs, std::string fs);
 	mgl::Camera* createCamera(glm::mat4 viewMatrix);
 	void CreateSceneGraph();
 	void getObject();
-	glm::vec3 getLookAt();
-	//void updateScenegraph(double elapsed) override;
 	void drawScene();
 	void animate();
 
 	float lastX = 0.0f, lastY = 0.0f;	//Mouse
+	float clickX = 0.0f, clickY = 0.0f;	//Mouse
 
 	glm::mat4 ViewMatrix;			//Camera
 	glm::vec3 ViewMatrix_position;	//Position
 	glm::quat ViewMatrix_rotation;	//Rotation
 	glm::vec3 ViewMatrix_center;	//Center
 
+	bool moveObject = false;
+	mgl::SceneNode* selectedObject = nullptr;
 
 	const float THRESHOLD = static_cast<float>(1.0e-5);
 };
@@ -91,70 +92,19 @@ void MyApp::CreateSceneGraph() {
 	TableNode = new mgl::SceneNode("Table");
 
 	Texture = new mgl::Texture2D;
-	Texture->load("./assets/textures/image.jpg");
 	TableNode->create(RootNode, Texture, "stonetable.obj", "./assets/shaders/marble-vs.glsl", "./assets/shaders/marble-fs.glsl");
-	TableNode->changeShaderColor(glm::vec3(0.7f, 0.7f, 0.7f));
+	TableNode->changeShaderColor(glm::vec4(0.7f, 0.7f, 0.7f, 1.0f));
 	RootNode->add(TableNode);
 
 
 	BallNode = new mgl::SceneNode("Ball");
 	Texture = new mgl::Texture2D;
-	Texture->load("./assets/textures/image.jpg");
 	BallNode->create(TableNode, Texture, "tennisball.obj", "./assets/shaders/wood-vs.glsl", "./assets/shaders/wood-fs.glsl");
 	BallNode->move(glm::vec3(0.0f, 7.0f, 0.0f));
-	BallNode->changeShaderColor(glm::vec3(0.0f, 1.0f, 0.0f));
+	BallNode->changeShaderColor(glm::vec4(0.0f, 0.7f, 0.0f, 0.99f));
 	TableNode->add(BallNode);
 
 }
-
-
-
-/*
-void MyApp::updateScenegraph(double elapsed) {
-	float Red = 0.0f, Green = 0.0f, Blue = 0.0f;
-	const float ColorDelta = 0.01f;
-	bool color_changed = false;
-	if (mgl::KeyBuffer::getInstance().isKeyDown(GLFW_KEY_Q)) {
-		Red += ColorDelta;
-		color_changed = true;
-	}
-	if (mgl::KeyBuffer::getInstance().isKeyDown(GLFW_KEY_A)) {
-		Red -= ColorDelta;
-		color_changed = true;
-	}
-	if (mgl::KeyBuffer::getInstance().isKeyDown(GLFW_KEY_W)) {
-		Green += ColorDelta;
-		color_changed = true;
-	}
-	if (mgl::KeyBuffer::getInstance().isKeyDown(GLFW_KEY_S)) {
-		Green -= ColorDelta;
-		color_changed = true;
-	}
-	if (mgl::KeyBuffer::getInstance().isKeyDown(GLFW_KEY_E)) {
-		Blue += ColorDelta;
-		color_changed = true;
-	}
-	if (mgl::KeyBuffer::getInstance().isKeyDown(GLFW_KEY_D)) {
-		Blue -= ColorDelta;
-		color_changed = true;
-	}
-	if (color_changed) {
-		Red = Red > 1.0f ? 1.0f : Red < 0.0f ? 0.0f : Red;
-		Green = Green > 1.0f ? 1.0f : Green < 0.0f ? 0.0f : Green;
-		Blue = Blue > 1.0f ? 1.0f : Blue < 0.0f ? 0.0f : Blue;
-
-		std::cout << "(" << Red << "," << Green << "," << Blue << ")" << std::endl;
-
-		mgl::ShaderProgram* program =
-			mgl::ShaderProgramManager::getInstance().get("shader");
-		program->bind();
-		glUniform4f(program->Uniforms["Color"].index, Red, Green, Blue, 1.0f);
-		program->unbind();
-	}
-}
-*/
-
-
 
 ///////////////////////////////////////////////////////////////////////// CAMERA
 
@@ -172,17 +122,9 @@ mgl::Camera* MyApp::createCamera(glm::mat4 ViewMatrix) {
 }
 
 
-const float THRESHOLD = static_cast<float>(1.0e-3);
-
-
 void MyApp::drawScene() {
-	//glBindVertexArray(VaoId);
-	for (mgl::SceneNode* node : SceneGraph->RootNode->Nodes) {
-		if (!(node->Nodes.empty()))
-			node->draw();
-	}
+	SceneGraph->RootNode->draw();
 }
-
 
 
 ////////////////////////////////////////////////////////////////////// CALLBACKS
@@ -200,8 +142,7 @@ void MyApp::windowSizeCallback(GLFWwindow* win, int winx, int winy) {
 
 void MyApp::displayCallback(GLFWwindow* win, double elapsed) { drawScene(); }
 
-bool moveObject = false;
-mgl::SceneNode* selectedObject = nullptr;
+
 void MyApp::keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
 	MyApp* myApp = static_cast<MyApp*>(glfwGetWindowUserPointer(window));
 
@@ -210,21 +151,19 @@ void MyApp::keyCallback(GLFWwindow* window, int key, int scancode, int action, i
 			//std::cout << "Being pressed" << "\n";
 		}
 		if (selectedObject != nullptr) { //CHECK IF OBJECT IS SELECTED
-			glm::mat4 c = glm::inverse(Camera->getViewMatrix());
-			glm::vec3 cameraRight = glm::vec3(c[0]);
-			glm::vec3 cameraForward = glm::vec3(c[2]);
+			if (key == GLFW_KEY_UP || key == GLFW_KEY_DOWN || key == GLFW_KEY_RIGHT || key == GLFW_KEY_LEFT) {
+				glm::mat4 c = glm::inverse(Camera->getViewMatrix());
+				glm::vec3 cameraRight = glm::vec3(c[0]);
+				glm::vec3 cameraForward = glm::vec3(c[2]);
 
-			cameraForward.y = 0;
-			cameraRight.y = 0;
+				cameraForward.y = 0;
+				cameraRight.y = 0;
 
-			glm::vec3 right = cameraRight * (0.2f * (int(key == GLFW_KEY_RIGHT) - int(key == GLFW_KEY_LEFT)));
-			glm::vec3 depth = -cameraForward * (0.2f * (int(key == GLFW_KEY_UP) - int(key == GLFW_KEY_DOWN)));
+				glm::vec3 right = cameraRight * (0.2f * (int(key == GLFW_KEY_RIGHT) - int(key == GLFW_KEY_LEFT)));
+				glm::vec3 depth = -cameraForward * (0.2f * (int(key == GLFW_KEY_UP) - int(key == GLFW_KEY_DOWN)));
 
-			selectedObject->move(depth + right);
-			for (mgl::SceneNode* node : selectedObject->Nodes) {
-				node->move(depth + right);
+				selectedObject->move(depth + right);
 			}
-
 		}
 	}
 	if (action == GLFW_PRESS) {
@@ -237,17 +176,14 @@ void MyApp::keyCallback(GLFWwindow* window, int key, int scancode, int action, i
 			SceneGraph->ViewMatrix_rotation = ViewMatrix_rotation;
 			SceneGraph->save("./assets/saves/save.txt");
 
-			std::cout << glm::to_string(ViewMatrix_rotation) << "\n";
 		}
 		if (key == GLFW_KEY_L) {
 			SceneGraph->load("./assets/saves/save.txt");
-			std::cout << glm::to_string(ViewMatrix_rotation) << "\n";
+
 			ViewMatrix_position = SceneGraph->ViewMatrix_position;
 			ViewMatrix_rotation = SceneGraph->ViewMatrix_rotation;
 
 			ViewMatrix = glm::lookAt(ViewMatrix_position, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-
-			std::cout << glm::to_string(ViewMatrix_rotation) << "\n";
 
 			Camera->setViewMatrix(glm::translate(ViewMatrix * glm::mat4(ViewMatrix_rotation), -ViewMatrix_center));
 		}
@@ -259,36 +195,26 @@ void MyApp::keyCallback(GLFWwindow* window, int key, int scancode, int action, i
 	}
 }
 
+
 void MyApp::getObject() {
 	GLint viewport[4];
 	glGetIntegerv(GL_VIEWPORT, viewport);
 
-	//NEED CORRECT OBJECT
-	selectedObject = SceneGraph->RootNode;
+	unsigned char pixelColor[4];
+	glReadPixels((GLint)lastX, viewport[3] - (GLint)lastY, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, pixelColor);
+	glm::vec4 pixel(pixelColor[0] / 255.0f, pixelColor[1] / 255.0f, pixelColor[2] / 255.0f, pixelColor[3] / 255.0f);
 
-	unsigned char pixelColor[3];
-	glReadPixels((GLint)lastX, viewport[3] - (GLint)lastY, 1, 1, GL_RGB, GL_UNSIGNED_BYTE, pixelColor);
-	glm::vec3 pixel(pixelColor[0] / 255.0f, pixelColor[1] / 255.0f, pixelColor[2] / 255.0f);
-
-	if (!(glm::all(glm::equal(pixel, glm::vec3(0.1f, 0.1f, 0.3f), 0.01f)))) {
-		std::cout << glm::to_string(pixel) << "\n";
+	if (!(glm::all(glm::equal(pixel, glm::vec4(0.1f, 0.1f, 0.3f, 1.0f), 0.01f)))) {
+		//std::cout << glm::to_string(pixel) << "\n";
+		int intAlpha = (int)(pixel[3] * 100 + .5);
+		float floatAlpha = intAlpha / 100.0;			//round to 2 places decimal
+		selectedObject = SceneGraph->RootNode->getSceneAlpha(floatAlpha);
+		std::cout << selectedObject->NodeName << "\n";
 	}
-}
-
-glm::vec3 MyApp::getLookAt() {
-	mgl::SceneNode* ball = SceneGraph->RootNode->getNode("Ball");
-
-	GLfloat modelMatrix[16];
-	glGetUniformfv(ball->Shader->ProgramId, 0, modelMatrix);
-
-	return glm::vec3(glm::make_mat4(modelMatrix)[3]);
 }
 
 void MyApp::cursorCallback(GLFWwindow* win, double xpos, double ypos) {
-	if (moveObject && glfwGetMouseButton(win, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
-		getObject();
-	}
-	else if (glfwGetMouseButton(win, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
+	if (!moveObject && glfwGetMouseButton(win, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
 		float deltaX = float(xpos) - lastX;
 		float deltaY = lastY - float(ypos);
 
@@ -309,6 +235,17 @@ void MyApp::cursorCallback(GLFWwindow* win, double xpos, double ypos) {
 	lastY = float(ypos);
 }
 
+void MyApp::mouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
+	if (moveObject && button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+		double mouseX, mouseY;
+		glfwGetCursorPos(window, &mouseX, &mouseY);
+		lastX = (float)mouseX;
+		lastY = (float)mouseY;
+		getObject();
+	}
+}
+
+
 void MyApp::scrollCallback(GLFWwindow* window, double xoffset, double yoffset)
 {
 	float offset = -(float)yoffset;
@@ -317,6 +254,8 @@ void MyApp::scrollCallback(GLFWwindow* window, double xoffset, double yoffset)
 
 	if (dist > 10.0f && offset < 1 || offset > 1 && dist < 50.0f || (dist > 10.0f && dist < 50.0f)) {
 		ViewMatrix_position += (ViewMatrix_position)*offset * 0.05f;
+
+		clamp(ViewMatrix_position, 30.0f, 40.0f);
 
 		ViewMatrix = glm::lookAt(ViewMatrix_position, glm::vec3(0.0f, 0.0f, 0.0f),
 			glm::vec3(0.0f, 1.0f, 0.0f));
