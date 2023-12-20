@@ -33,9 +33,6 @@
     <ClCompile Include="dependencies\03-mgl\mglTexture.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="dependencies\03-mgl\stb_image.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="dependencies\03-mgl\mglShader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -65,5 +62,10 @@
     <None Include="assets\shaders\wood-vs.glsl">
       <Filter>Resource Files</Filter>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\..\Downloads\db_perlin.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

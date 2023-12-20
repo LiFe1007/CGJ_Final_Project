@@ -43,6 +43,18 @@ namespace mgl {
 		Texture2D = texture;
 		Mesh = createMeshes(mesh);
 		Shader = createShaderProgram(shadervs, shaderfs);
+
+
+		Sampler* sampler = new LinearSampler;
+		sampler->create();
+
+		texture->PerlinNoise2D();//create texture
+		//texture->load("./assets/textures/image2.jpg");
+
+		TextureInfo* ti = new TextureInfo(0, 0, "inTex", texture, sampler);
+
+		ti->updateShader(Shader);
+
 	}
 
 	void SceneNode::add(mgl::SceneNode* node) {
@@ -129,6 +141,7 @@ namespace mgl {
 		mgl::Mesh* m = nullptr;
 		m = new mgl::Mesh();
 		m->generateNormals();
+		m->generateTexcoords();
 
 		m->joinIdenticalVertices();
 		m->create(mesh_obj_fullname);
@@ -158,11 +171,14 @@ namespace mgl {
 
 		s->addUniform(mgl::MODEL_MATRIX);
 		s->addUniform(mgl::COLOR_ATTRIBUTE);
+		s->addUniform(mgl::TEX_ATTRIBUTE);
+
 		s->addUniformBlock(mgl::CAMERA_BLOCK, UBO_BP);
 		s->create();
 
 		ModelMatrixId = s->Uniforms[mgl::MODEL_MATRIX].index;
 		ColorId = s->Uniforms[mgl::COLOR_ATTRIBUTE].index;
+		TexId = s->Uniforms[mgl::TEX_ATTRIBUTE].index;
 
 		s->bind();
 		glUniformMatrix4fv(ModelMatrixId, 1, GL_FALSE, glm::value_ptr(glm::mat4(1.0f)));

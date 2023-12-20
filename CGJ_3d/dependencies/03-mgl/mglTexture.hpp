@@ -59,7 +59,7 @@ namespace mgl {
 		void bind() override;
 		void unbind() override;
 		void load(const std::string& filename);
-		//void PerlinNoise(int 256, int 5, int 5, int 2, int 2, int 8);
+		void PerlinNoise2D();
 	};
 
 	////////////////////////////////////////////////////////////////////////////////

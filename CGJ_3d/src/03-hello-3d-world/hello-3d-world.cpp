@@ -180,10 +180,9 @@ void MyApp::keyCallback(GLFWwindow* window, int key, int scancode, int action, i
 		if (key == GLFW_KEY_L) {
 			SceneGraph->load("./assets/saves/save.txt");
 
+			ViewMatrix = SceneGraph->ViewMatrix;
 			ViewMatrix_position = SceneGraph->ViewMatrix_position;
 			ViewMatrix_rotation = SceneGraph->ViewMatrix_rotation;
-
-			ViewMatrix = glm::lookAt(ViewMatrix_position, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
 			Camera->setViewMatrix(glm::translate(ViewMatrix * glm::mat4(ViewMatrix_rotation), -ViewMatrix_center));
 		}

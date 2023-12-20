@@ -67,7 +67,7 @@ namespace mgl {
 		ShaderProgram* Shader = nullptr;	//SHADER
 		std::string ShaderVS;
 		std::string ShaderFS;
-		GLint ModelMatrixId, ColorId;
+		GLint ModelMatrixId, ColorId, TexId;
 	};
 
 

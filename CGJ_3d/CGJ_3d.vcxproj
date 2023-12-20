@@ -139,7 +139,6 @@
     <ClCompile Include="dependencies\03-mgl\mglScenegraph.cpp" />
     <ClCompile Include="dependencies\03-mgl\mglShader.cpp" />
     <ClCompile Include="dependencies\03-mgl\mglTexture.cpp" />
-    <ClCompile Include="dependencies\03-mgl\stb_image.cpp" />
     <ClCompile Include="src\03-hello-3d-world\hello-3d-world.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -149,6 +148,9 @@
     <None Include="assets\shaders\marble-vs.glsl" />
     <None Include="assets\shaders\wood-fs.glsl" />
     <None Include="assets\shaders\wood-vs.glsl" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\..\Downloads\db_perlin.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
