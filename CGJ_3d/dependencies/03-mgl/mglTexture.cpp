@@ -48,22 +48,27 @@ namespace mgl {
 		int width, height, channels;
 		std::cout << "Loading image file " << filename << "... ";
 		unsigned char* image_rgb = stbi_load(filename.c_str(), &width, &height, &channels, 0);
-		assert(channels == 3);
+
 		unsigned char* image = new unsigned char[width * height * 4];
 		texWidth = width;
 		texHeight = height;
-		// Copy RGB values and set alpha to 1
-		for (int i = 0; i < width * height * 3; i++) {
-			image[i] = image_rgb[i];
+
+		assert(channels == 3 || channels == 4);
+		if (channels == 3) {
+
+			// Copy RGB values and set alpha to 1
+			for (int i = 0; i < width * height * 3; i++) {
+				image[i] = image_rgb[i];
+			}
+			for (int i = width * height * 3; i < width * height * 4; i++) {
+				image[i] = 255; // alpha = 1
+			}
+			// Free original RGB image
+			stbi_image_free(image_rgb);
 		}
-
-		for (int i = width * height * 3; i < width * height * 4; i++) {
-			image[i] = 255; // alpha = 1
+		else if (channels == 4) {
+			image =	image_rgb;
 		}
-		// Free original RGB image
-		stbi_image_free(image_rgb);
-
-
 
 		if (image == nullptr) {
 			std::cout << "error." << std::endl;
@@ -111,22 +116,18 @@ namespace mgl {
 		stbi_image_free(image);
 	}
 
+
 	void Texture2D::PerlinNoise2D() {
-		const int width = 256;
-		const int height = 256;
+		const int width = 512;
+		const int height = 512;
 		texWidth = width;
 		texHeight = height;
 
-
-		// Typical values
-		const int octaves = 6;
-		const float persistence = 0.5f;
-		const float scale = 4.0f;
-
 		unsigned char* data = new unsigned char[width * height * 4];
 
-		PerlinNoise pn = PerlinNoise(12345);
+		PerlinNoise* pn = new PerlinNoise;
 
+		float perl;
 
 		for (int y = 0; y < height; y++) {
 			for (int x = 0; x < width; x++) {
@@ -134,13 +135,12 @@ namespace mgl {
 				float nx = (float)x / width;
 				float ny = (float)y / height;
 
-				float v = pn.noise(nx, ny,0);
+				perl = pn->perlin(nx, ny) * 10000;
+				perl = perl / 4;
 
-				v *= 255.0f;
-
-				data[(y * width + x) * 4 + 0] = (unsigned char)v;
-				data[(y * width + x) * 4 + 1] = (unsigned char)v;
-				data[(y * width + x) * 4 + 2] = (unsigned char)v;
+				data[(y * width + x) * 4 + 0] = (unsigned char)perl;
+				data[(y * width + x) * 4 + 1] = (unsigned char)perl;
+				data[(y * width + x) * 4 + 2] = (unsigned char)perl;
 				data[(y * width + x) * 4 + 3] = 255;
 
 			}
@@ -158,21 +158,21 @@ namespace mgl {
 		// glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		// glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
-		// glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
-		// glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
 
 		// glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		// glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-		// glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
-		//                GL_LINEAR_MIPMAP_LINEAR);
-		// glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+		                GL_LINEAR_MIPMAP_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA,
 			GL_UNSIGNED_BYTE, data);
@@ -185,11 +185,8 @@ namespace mgl {
 		stbi_image_free(data);
 	}
 
-	/** /
-	void Texture2D::PerlinNoise(int 256, 5, 5, 2, 2, 8) {
-		PerlinNoise(256, 5, 5, 2, 2, 8);
-	}
-	/**/
+
+
 	////////////////////////////////////////////////////////////////////////////////
 } // namespace mgl
 

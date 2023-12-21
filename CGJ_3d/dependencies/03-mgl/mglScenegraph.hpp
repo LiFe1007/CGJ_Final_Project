@@ -29,7 +29,6 @@ namespace mgl {
 	};
 
 
-	/**/
 
 	class Mesh;
 	class Texture2D;
@@ -45,7 +44,7 @@ namespace mgl {
 		~SceneNode();
 		void draw();
 		SceneNode* getInstance();
-		void create(SceneNode* parent, Texture2D* texture, std::string mesh, std::string shadervs, std::string shaderfs);
+		void create(SceneNode* parent, std::string texture, std::string mesh, std::string shadervs, std::string shaderfs);
 		void add(SceneNode* node);
 		void move(glm::vec3 movement);
 		SceneNode* getNode(std::string name);

@@ -33,28 +33,27 @@ namespace mgl {
 	SceneNode::~SceneNode() {}
 
 	SceneNode* SceneNode::getInstance(void) {
-		;
 		return this;
 	}
 
-	void SceneNode::create(mgl::SceneNode* parent, mgl::Texture2D* texture, std::string mesh, std::string shadervs, std::string shaderfs) {
+	void SceneNode::create(mgl::SceneNode* parent, std::string texture, std::string mesh, std::string shadervs, std::string shaderfs) {
 
 		Parent = parent;
-		Texture2D = texture;
 		Mesh = createMeshes(mesh);
 		Shader = createShaderProgram(shadervs, shaderfs);
 
+		if (texture == "PerlinNoise") {
+			std::cout << "Loading Perlin Noise texture to object " << NodeName << " .... ";
+			Texture2D = new mgl::Texture2D;
+			Texture2D->PerlinNoise2D();
+			std::cout << "ok\n\n";
 
-		Sampler* sampler = new LinearSampler;
-		sampler->create();
+			TextureInfo* ti = new TextureInfo(0, 0, "inTex", Texture2D, nullptr);
 
-		texture->PerlinNoise2D();//create texture
-		//texture->load("./assets/textures/image2.jpg");
-
-		TextureInfo* ti = new TextureInfo(0, 0, "inTex", texture, sampler);
-
-		ti->updateShader(Shader);
-
+			ti->updateShader(Shader);
+		}
+		else
+			Texture2D = nullptr;
 	}
 
 	void SceneNode::add(mgl::SceneNode* node) {
@@ -64,7 +63,6 @@ namespace mgl {
 	void SceneNode::draw() {
 		if (Shader != nullptr && Mesh != nullptr) {
 			Shader->bind();
-			/* Read the framebuffer into our storage */
 
 			Mesh->draw();
 
@@ -174,6 +172,8 @@ namespace mgl {
 		s->addUniform(mgl::TEX_ATTRIBUTE);
 
 		s->addUniformBlock(mgl::CAMERA_BLOCK, UBO_BP);
+
+		std::cout << "\nCreating Shader to object " << NodeName << "\n";
 		s->create();
 
 		ModelMatrixId = s->Uniforms[mgl::MODEL_MATRIX].index;
@@ -199,7 +199,6 @@ namespace mgl {
 
 			// Variable to store retrieved matrix
 			GLfloat color[4];
-
 			// Retrieve uniform value
 			glGetUniformfv(Shader->ProgramId, ColorId, color);
 
@@ -240,11 +239,10 @@ namespace mgl {
 
 		std::ofstream outfile(filename);
 
-		// Write root node
+		//CreateCamera
 		outfile << glm::to_string(ViewMatrix) << std::endl;
 		outfile << glm::to_string(ViewMatrix_position) << std::endl;
 		outfile << glm::to_string(ViewMatrix_rotation) << std::endl;
-		//CreateCamera
 
 		// Recursively write all nodes
 		saveNode(RootNode, outfile);
@@ -274,6 +272,11 @@ namespace mgl {
 			GLfloat color[4];
 			glGetUniformfv(node->Shader->ProgramId, 1, color);	//Color
 			outfile << glm::to_string(glm::make_vec4(color)) << std::endl;
+		}
+
+		if (node->Texture2D != nullptr) {
+			outfile << "__TEXTURE__" << std::endl;
+			outfile << "PerlinNoise" << std::endl;
 		}
 
 		if (node->NodeName != "Root") {
@@ -316,12 +319,12 @@ namespace mgl {
 		std::string line;
 
 		std::string name;
-		Texture2D* newTexture = nullptr;
+		std::string texture = "";
 		std::string meshLocation;
 		std::string shadervs;
 		std::string shaderfs;
-		glm::vec3 objPosition;
-		glm::vec4 objColor;
+		glm::vec3 objPosition = glm::vec3(0.0f);
+		glm::vec4 objColor = glm::vec4(1.0f);
 
 
 		getline(infile, line);
@@ -349,11 +352,13 @@ namespace mgl {
 			objColor = glm::make_vec4(stringToGlm(line).data());
 			getline(infile, line);
 		}
-
-
+		if (line == "__TEXTURE__") {
+			getline(infile, texture);
+			getline(infile, line);
+		}
 		SceneNode* node = new SceneNode(name);
 		if (!meshLocation.empty() && !shadervs.empty() && !shaderfs.empty()) {
-			node->create(parent, newTexture, meshLocation, shadervs, shaderfs);
+			node->create(parent, texture, meshLocation, shadervs, shaderfs);
 			node->move(objPosition);
 			node->changeShaderColor(objColor);
 		}

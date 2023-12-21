@@ -92,14 +92,13 @@ void MyApp::CreateSceneGraph() {
 	TableNode = new mgl::SceneNode("Table");
 
 	Texture = new mgl::Texture2D;
-	TableNode->create(RootNode, Texture, "stonetable.obj", "./assets/shaders/marble-vs.glsl", "./assets/shaders/marble-fs.glsl");
-	TableNode->changeShaderColor(glm::vec4(0.7f, 0.7f, 0.7f, 1.0f));
+	TableNode->create(RootNode, "PerlinNoise", "stonetable.obj", "./assets/shaders/marble-vs.glsl", "./assets/shaders/marble-fs.glsl");
+	TableNode->changeShaderColor(glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
 	RootNode->add(TableNode);
 
 
 	BallNode = new mgl::SceneNode("Ball");
-	Texture = new mgl::Texture2D;
-	BallNode->create(TableNode, Texture, "tennisball.obj", "./assets/shaders/wood-vs.glsl", "./assets/shaders/wood-fs.glsl");
+	BallNode->create(TableNode, "", "tennisball.obj", "./assets/shaders/ball-vs.glsl", "./assets/shaders/ball-fs.glsl");
 	BallNode->move(glm::vec3(0.0f, 7.0f, 0.0f));
 	BallNode->changeShaderColor(glm::vec4(0.0f, 0.7f, 0.0f, 0.99f));
 	TableNode->add(BallNode);
